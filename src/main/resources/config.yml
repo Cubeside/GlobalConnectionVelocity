@@ -1,0 +1,6 @@
+client:
+  account: CHANGEME
+  password: CHANGEME
+server:
+  host: localhost
+  port: 25701

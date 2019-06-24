@@ -1,0 +1,5 @@
+name: GlobalClient
+main: de.cubeside.connection.GlobalClientPlugin
+version: 0.0.1
+description: GlobalClient
+author: Brokkonaut
