@@ -99,7 +99,10 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
         schedule(new Runnable() {
             @Override
             public void run() {
-                onPlayerOnline(p.getUniqueId(), p.getName(), System.currentTimeMillis());
+                GlobalPlayer existing = getPlayer(p.getUniqueId());
+                if (existing == null || !existing.isOnServer(getThisServer())) {
+                    onPlayerOnline(p.getUniqueId(), p.getName(), System.currentTimeMillis());
+                }
             }
         });
     }
@@ -110,7 +113,10 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
         schedule(new Runnable() {
             @Override
             public void run() {
-                onPlayerOffline(p.getUniqueId());
+                GlobalPlayer existing = getPlayer(p.getUniqueId());
+                if (existing != null && existing.isOnServer(getThisServer())) {
+                    onPlayerOffline(p.getUniqueId());
+                }
             }
         });
     }
