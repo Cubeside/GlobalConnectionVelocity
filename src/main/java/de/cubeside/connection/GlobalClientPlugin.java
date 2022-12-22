@@ -15,11 +15,16 @@ import net.md_5.bungee.config.YamlConfiguration;
 public class GlobalClientPlugin extends Plugin {
     private GlobalClientBungee globalClient;
 
+    private PlayerPropertiesImplementation propertiesAPI;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
         globalClient = new GlobalClientBungee(this);
+
         reconnectClient();
+
+        propertiesAPI = new PlayerPropertiesImplementation(this);
 
         getProxy().getPluginManager().registerCommand(this, new ReloadCommand());
     }
@@ -78,5 +83,9 @@ public class GlobalClientPlugin extends Plugin {
 
     public ConnectionAPI getConnectionAPI() {
         return globalClient;
+    }
+
+    public PlayerPropertiesAPI getPropertiesAPI() {
+        return propertiesAPI;
     }
 }

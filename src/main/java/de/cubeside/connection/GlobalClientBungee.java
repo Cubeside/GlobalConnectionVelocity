@@ -93,7 +93,7 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
         plugin.getProxy().getPluginManager().callEvent(new GlobalDataEvent(source, targetPlayer, channel, data));
     }
 
-    @EventHandler
+    @EventHandler(priority = Byte.MIN_VALUE + 1)
     public void onPlayerJoin(PostLoginEvent e) {
         ProxiedPlayer p = e.getPlayer();
         schedule(new Runnable() {
@@ -107,7 +107,7 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
         });
     }
 
-    @EventHandler
+    @EventHandler(priority = Byte.MAX_VALUE - 1)
     public void onPlayerQuit(PlayerDisconnectEvent e) {
         ProxiedPlayer p = e.getPlayer();
         schedule(new Runnable() {
