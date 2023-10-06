@@ -131,7 +131,7 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
                                     String property = dis.readUTF();
                                     String value = dis.readUTF();
                                     properties.put(property, value);
-                                    events.add(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, null));
+                                    events.add(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, value));
                                 }
                             }
                             for (GlobalPlayerPropertyChangedEvent event : events) {
