@@ -49,7 +49,7 @@ public class GlobalClientPlugin {
         propertiesAPI = new PlayerPropertiesImplementation(this);
 
         CommandManager commandManager = server.getCommandManager();
-        CommandMeta commandMeta = commandManager.metaBuilder("bungeeglobalclientreload").plugin(this).build();
+        CommandMeta commandMeta = commandManager.metaBuilder("velocityglobalclientreload").plugin(this).build();
         commandManager.register(commandMeta, new ReloadCommand());
     }
 
