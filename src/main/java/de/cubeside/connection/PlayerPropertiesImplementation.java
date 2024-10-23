@@ -1,6 +1,8 @@
 package de.cubeside.connection;
 
 import com.google.common.base.Preconditions;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.proxy.Player;
 import de.cubeside.connection.event.GlobalDataEvent;
 import de.cubeside.connection.event.GlobalPlayerDisconnectedEvent;
 import de.cubeside.connection.event.GlobalPlayerPropertyChangedEvent;
@@ -17,12 +19,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Level;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.event.EventHandler;
 
-public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, Listener {
+public class PlayerPropertiesImplementation implements PlayerPropertiesAPI {
 
     private final static int MESSAGE_SET_PROPERTY = 1;
     private final static int MESSAGE_DELETE_PROPERTY = 2;
@@ -41,10 +39,10 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
     public PlayerPropertiesImplementation(GlobalClientPlugin plugin) {
         this.plugin = plugin;
         this.playerProperties = new HashMap<>();
-        plugin.getProxy().getPluginManager().registerListener(plugin, this);
+        plugin.getServer().getEventManager().register(plugin, this);
     }
 
-    @EventHandler
+    @Subscribe
     public void onGlobalPlayerDisconnected(GlobalPlayerDisconnectedEvent e) {
         if (e.hasJustLeftTheNetwork()) {
             try (AutoCloseableLockWrapper lock = writeLock.open()) {
@@ -53,14 +51,14 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
         }
     }
 
-    @EventHandler
+    @Subscribe
     public void onGlobalServerConnected(GlobalServerConnectedEvent e) {
         // send all properties
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
         try {
             dos.writeByte(MESSAGE_MULTISET_PROPERTIES);
-            for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            for (Player p : plugin.getServer().getAllPlayers()) {
                 UUID uuid = p.getUniqueId();
                 try (AutoCloseableLockWrapper lock = readLock.open()) {
                     HashMap<String, String> properties = playerProperties.get(uuid);
@@ -84,7 +82,7 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
         e.getServer().sendData(CHANNEL, baos.toByteArray());
     }
 
-    @EventHandler
+    @Subscribe
     public void onGlobalData(GlobalDataEvent e) {
         if (e.getChannel().equals(CHANNEL)) {
             DataInputStream dis = new DataInputStream(e.getData());
@@ -99,7 +97,7 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
                         HashMap<String, String> properties = playerProperties.computeIfAbsent(uuid, theUuid -> new HashMap<>());
                         properties.put(property, value);
                     }
-                    plugin.getProxy().getPluginManager().callEvent(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, value));
+                    plugin.getServer().getEventManager().fire(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, value));
                 } else if (type == MESSAGE_DELETE_PROPERTY) {
                     UUID uuid = readUUID(dis);
                     GlobalPlayer target = plugin.getConnectionAPI().getPlayer(uuid);
@@ -116,7 +114,7 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
                         }
                     }
                     if (event) {
-                        plugin.getProxy().getPluginManager().callEvent(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, null));
+                        plugin.getServer().getEventManager().fire(new GlobalPlayerPropertyChangedEvent(e.getSource(), target, property, null));
                     }
                 } else if (type == MESSAGE_MULTISET_PROPERTIES) {
                     while (dis.readBoolean()) {
@@ -135,13 +133,13 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
                                 }
                             }
                             for (GlobalPlayerPropertyChangedEvent event : events) {
-                                plugin.getProxy().getPluginManager().callEvent(event);
+                                plugin.getServer().getEventManager().fire(event);
                             }
                         }
                     }
                 }
             } catch (IOException ex) {
-                plugin.getLogger().log(Level.SEVERE, "Could not parse PlayerProperties message", ex);
+                plugin.getLogger().error("Could not parse PlayerProperties message", ex);
             }
         }
     }
@@ -231,6 +229,6 @@ public class PlayerPropertiesImplementation implements PlayerPropertiesAPI, List
                 throw new Error("impossible");
             }
         }
-        plugin.getProxy().getPluginManager().callEvent(new GlobalPlayerPropertyChangedEvent(plugin.getConnectionAPI().getThisServer(), player, property, value));
+        plugin.getServer().getEventManager().fire(new GlobalPlayerPropertyChangedEvent(plugin.getConnectionAPI().getThisServer(), player, property, value));
     }
 }

@@ -4,9 +4,8 @@ import de.cubeside.connection.GlobalPlayer;
 import de.cubeside.connection.GlobalServer;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import net.md_5.bungee.api.plugin.Event;
 
-public class GlobalDataEvent extends Event {
+public class GlobalDataEvent {
     private final GlobalServer source;
     private final GlobalPlayer targetPlayer;
 

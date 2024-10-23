@@ -1,19 +1,17 @@
 package de.cubeside.connection;
 
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.proxy.Player;
 import de.cubeside.connection.event.GlobalDataEvent;
 import de.cubeside.connection.event.GlobalPlayerDisconnectedEvent;
 import de.cubeside.connection.event.GlobalPlayerJoinedEvent;
 import de.cubeside.connection.event.GlobalServerConnectedEvent;
 import de.cubeside.connection.event.GlobalServerDisconnectedEvent;
 import java.util.ArrayDeque;
-import java.util.logging.Level;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.event.PlayerDisconnectEvent;
-import net.md_5.bungee.api.event.PostLoginEvent;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.event.EventHandler;
 
-public class GlobalClientBungee extends GlobalClient implements Listener {
+public class GlobalClientVelocity extends GlobalClient {
     private final GlobalClientPlugin plugin;
     private boolean stoppingServer;
 
@@ -21,11 +19,11 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
     protected final Object sync = new Object();
     protected boolean running = true;
 
-    public GlobalClientBungee(GlobalClientPlugin connectionPlugin) {
-        super(connectionPlugin.getLogger());
+    public GlobalClientVelocity(GlobalClientPlugin connectionPlugin) {
+        super(null);
         plugin = connectionPlugin;
-        plugin.getProxy().getScheduler().runAsync(plugin, new MainThread());
-        plugin.getProxy().getPluginManager().registerListener(plugin, this);
+        plugin.getServer().getScheduler().buildTask(plugin, new MainThread()).schedule();
+        plugin.getServer().getEventManager().register(plugin, this);
     }
 
     private class MainThread implements Runnable {
@@ -51,7 +49,7 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
                     try {
                         task.run();
                     } catch (Throwable t) {
-                        plugin.getLogger().log(Level.SEVERE, "Exception in Client thread", t);
+                        plugin.getLogger().error("Exception in Client thread", t);
                     }
                 }
             }
@@ -73,9 +71,9 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
         schedule(new Runnable() {
             @Override
             public void run() {
-                GlobalClientBungee.super.setServer(host, port, account, password);
-                for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
-                    onPlayerOnline(p.getUniqueId(), p.getName(), System.currentTimeMillis());
+                GlobalClientVelocity.super.setServer(host, port, account, password);
+                for (Player p : plugin.getServer().getAllPlayers()) {
+                    onPlayerOnline(p.getUniqueId(), p.getUsername(), System.currentTimeMillis());
                 }
             }
         });
@@ -90,26 +88,26 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
 
     @Override
     protected void processData(GlobalServer source, String channel, GlobalPlayer targetPlayer, GlobalServer targetServer, byte[] data) {
-        plugin.getProxy().getPluginManager().callEvent(new GlobalDataEvent(source, targetPlayer, channel, data));
+        plugin.getServer().getEventManager().fire(new GlobalDataEvent(source, targetPlayer, channel, data));
     }
 
-    @EventHandler(priority = Byte.MIN_VALUE + 2)
+    @Subscribe(priority = Byte.MIN_VALUE + 2)
     public void onPlayerJoin(PostLoginEvent e) {
-        ProxiedPlayer p = e.getPlayer();
+        Player p = e.getPlayer();
         schedule(new Runnable() {
             @Override
             public void run() {
                 GlobalPlayer existing = getPlayer(p.getUniqueId());
                 if (existing == null || !existing.isOnServer(getThisServer())) {
-                    onPlayerOnline(p.getUniqueId(), p.getName(), System.currentTimeMillis());
+                    onPlayerOnline(p.getUniqueId(), p.getUsername(), System.currentTimeMillis());
                 }
             }
         });
     }
 
-    @EventHandler(priority = Byte.MAX_VALUE - 1)
-    public void onPlayerQuit(PlayerDisconnectEvent e) {
-        ProxiedPlayer p = e.getPlayer();
+    @Subscribe(priority = Byte.MAX_VALUE - 1)
+    public void onPlayerQuit(DisconnectEvent e) {
+        Player p = e.getPlayer();
         schedule(new Runnable() {
             @Override
             public void run() {
@@ -123,22 +121,22 @@ public class GlobalClientBungee extends GlobalClient implements Listener {
 
     @Override
     protected void onPlayerJoined(GlobalServer server, GlobalPlayer player, boolean joinedTheNetwork) {
-        plugin.getProxy().getPluginManager().callEvent(new GlobalPlayerJoinedEvent(server, player, joinedTheNetwork));
+        plugin.getServer().getEventManager().fire(new GlobalPlayerJoinedEvent(server, player, joinedTheNetwork));
     }
 
     @Override
     protected void onPlayerDisconnected(GlobalServer server, GlobalPlayer player, boolean leftTheNetwork) {
-        plugin.getProxy().getPluginManager().callEvent(new GlobalPlayerDisconnectedEvent(server, player, leftTheNetwork));
+        plugin.getServer().getEventManager().fire(new GlobalPlayerDisconnectedEvent(server, player, leftTheNetwork));
     }
 
     @Override
     protected void onServerConnected(GlobalServer server) {
-        plugin.getProxy().getPluginManager().callEvent(new GlobalServerConnectedEvent(server));
+        plugin.getServer().getEventManager().fire(new GlobalServerConnectedEvent(server));
     }
 
     @Override
     protected void onServerDisconnected(GlobalServer server) {
-        plugin.getProxy().getPluginManager().callEvent(new GlobalServerDisconnectedEvent(server));
+        plugin.getServer().getEventManager().fire(new GlobalServerDisconnectedEvent(server));
     }
 
     @Override

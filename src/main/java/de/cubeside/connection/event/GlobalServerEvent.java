@@ -1,9 +1,8 @@
 package de.cubeside.connection.event;
 
 import de.cubeside.connection.GlobalServer;
-import net.md_5.bungee.api.plugin.Event;
 
-public abstract class GlobalServerEvent extends Event {
+public abstract class GlobalServerEvent {
     private final GlobalServer server;
 
     public GlobalServerEvent(GlobalServer server) {
