@@ -100,7 +100,6 @@ public class GlobalClientPlugin {
         String password = configuration.node("client", "password").getString();
         String host = configuration.node("server", "host").getString();
         int port = configuration.node("server", "port").getInt();
-        logger.info(account + " " + password + " " + host + " " + port);
         globalClient.setServer(host, port, account, password);
     }
 
